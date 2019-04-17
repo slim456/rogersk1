@@ -1,0 +1,63 @@
+Préliminaires : sudo apt update -y -> pour tester si les packages sont a jour 
+
+1- 2- Ajouter un utilisateur : sudo add user ...
+
+3-   fixer l'adresse ip et le netmsak en /30 : vim /etc/network/interfaces
+    auto enp0s3
+    iface enp0s3 inet static
+    address 10.0.2.1
+    netmask 255.255.255.252
+    gateway 10.0.2.2
+    
+    4- changement du port par defaut ( 2222 ) : vim /etc/ssh/sshd_config
+    
+    5- 7 : mise en place de règles pare feu et anti scan : vim firwall.rules 
+    iptables -A INPUT -i enp0s3 -p tcp --tcp-flags FIN,URG,PSH FIN,URG,PSH -j DROP
+    iptables -A INPUT -i enp0s3 -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+    iptables -A INPUT -i enp0s3 -p tcp --tcp-flags SYN,ACK,FIN,RST RST -j DROP
+ 
+6 - protection contre les DOS : vim /etc/fail2ban/jail.conf 
+                                vim /etc/portsentry/portsentry.conf
+
+8 - arreter les services ( si vous voulez) :
+root@debian:~# service nfs-common start
+[ ok ] Starting NFS common utilities: statd idmapd.
+root@debian:~# service nfs-common stop
+[ ok ] Stopping NFS common utilities: idmapd statd.
+root@debian:~# service nfs-common restart
+[ ok ] Stopping NFS common utilities: idmapd statd.
+[ ok ] Starting NFS common utilities: statd idmapd.
+root@debian:~# service nfs-common reload
+[ ok ] Usage: nfs-common {start|stop|status|restart}.
+root@debian:~# service nfs-common status
+all daemons running
+
+9  10 - surveiller les changements dans le fichier :  sudo vim /surveiller.sh 
+  SAUV_MD5_TAB=sauv_md5_crontab.txt
+     MD5_TAB=md5_crontab.txt
+
+if [ ! -f "$SAUV_MD5_TAB" ]
+then
+	md5sum /etc/crontab > "$SAUV_MD5_TAB"
+	echo "aletre /etc/crontab
+       	pas de fichier ref pour comparer la signature....
+	probablement la premier execution du script...
+	un fichier sauvgarde va etre cree...
+	" | mail -s "alerte" root
+else
+	md5sum /etc/crontab > "$MD5_TAB"
+	DIFF=$(diff "$MD5_TAB" "$SAUV_MD5_TAB")
+	if [  "$DIFF" ]
+	then
+		echo "	aletre /etc/crontab
+		event dans le dossier /etc/crontab
+	       	le fichier n'a pas la meme signature...." | mail -s "alerte" slimani.m.ms@gmail.com
+	fi
+	rm "$MD5_TAB"
+fi
+
+
+sudo crontab -l
+
+
+
